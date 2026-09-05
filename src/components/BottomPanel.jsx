@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Close, More } from './icons.jsx';
 import { ALL_FILES, PROFILE } from '../data/vfs.js';
+import { runTerminalCommand } from '../data/terminal.js';
 
 const PANEL_TABS = [
   { id: 'terminal', label: '终端' },
@@ -9,7 +10,7 @@ const PANEL_TABS = [
 ];
 
 const WELCOME = [
-  { text: '主页终端（装饰）—— 一个仅供玩乐的迷你命令解释器。输入 help 查看可用命令。' },
+  { text: '主页迷你终端 —— 输入 help 查看命令。命令在 src/data/terminal.js 里自定义（支持简单 JS）。' },
   { text: '' },
 ];
 
@@ -21,67 +22,6 @@ const OUTPUT_LINES = [
   { text: '' },
   { dim: true, text: '[主页] 点击上方“终端”标签试试迷你命令吧' },
 ];
-
-function runCommand(input, ctx) {
-  const { onOpen } = ctx;
-  const cmd = input.trim();
-  if (!cmd) return [{ text: '' }];
-  const [head, ...rest] = cmd.split(/\s+/);
-  const arg = rest.join(' ').trim();
-
-  switch (head.toLowerCase()) {
-    case 'help':
-      return [
-        { dim: true, text: '可用命令：' },
-        { text: '  help           显示本帮助' },
-        { text: '  ls             列出项目根目录内容' },
-        { text: '  open <文件>    打开左侧文件树中的文件' },
-        { text: '  skills         查看技能简介' },
-        { text: '  contact        查看联系方式' },
-        { text: '  whoami         我是谁' },
-        { text: '  date           现在几点' },
-        { text: '  echo <内容>    复读机' },
-        { text: '  clear          清屏' },
-      ];
-    case 'ls':
-      return [
-        { text: '目录：C:\\Users\\Kevin\\homepage（模拟）' },
-        ...ALL_FILES.map((f) => ({ text: `  ${f.path.replace(/^\//, '')}`, dim: f.kind !== 'md' })),
-      ];
-    case 'open': {
-      if (!arg) return [{ text: '用法：open <文件名>，例如 open 关于我.md' }];
-      const hit = ALL_FILES.find(
-        (f) => f.name === arg || f.name.includes(arg) || f.path.replace(/^\//, '').includes(arg),
-      );
-      if (!hit) return [{ text: `找不到文件：${arg}（可用 ls 查看）` }];
-      onOpen(hit);
-      return [{ text: `已打开：${hit.path.replace(/^\//, '')}` }];
-    }
-    case 'skills':
-      return [
-        { text: '张三 · 前端开发工程师' },
-        { dim: true, text: '擅长：JavaScript/TypeScript、React、CSS 动画、工程化。更多请打开 技能特长.md' },
-      ];
-    case 'contact':
-      return [{ text: '联系方式在 个人信息/联系方式.md 里，或直接问我 😄' }];
-    case 'whoami':
-      return [{ text: `${PROFILE.name}@${PROFILE.repo}` }, { dim: true, text: '前端开发工程师 · 坐标杭州' }];
-    case 'date':
-      return [{ text: new Date().toLocaleString('zh-CN', { hour12: false }) }];
-    case 'echo':
-      return [{ text: arg || '（空）' }];
-    case 'clear':
-      return { clear: true };
-    default:
-      return [
-        {
-          text: `${head} : 无法将“${head}”项识别为 cmdlet、函数、脚本文件或可运行程序的名称。`,
-          dim: true,
-        },
-        { text: '输入 help 查看可用命令。' },
-      ];
-  }
-}
 
 function TerminalPane({ onOpen }) {
   const [lines, setLines] = useState(WELCOME);
@@ -99,9 +39,9 @@ function TerminalPane({ onOpen }) {
     setValue('');
     setLines((prev) => {
       const next = [...prev, { text: `PS C:\\Users\\Kevin\\homepage> ${text}` }];
-      const out = runCommand(text, { onOpen });
+      const out = runTerminalCommand(text, { open: onOpen, files: ALL_FILES, profile: PROFILE });
       if (out.clear) return [];
-      return [...next, ...out];
+      return [...next, ...out.lines];
     });
   };
 
