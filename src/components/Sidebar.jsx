@@ -2,15 +2,11 @@ import React, { useMemo, useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
-  CollapseAll,
   FileTypeIcon,
   FolderClosed,
   FolderOpen,
-  More,
-  NewFile,
-  Refresh,
 } from './icons.jsx';
-import { ALL_FILES, FILE_TREE, PROFILE } from '../data/vfs.js';
+import { ALL_FILES, FILE_TREE } from '../data/vfs.js';
 
 /* ==================== 文件树 ==================== */
 function TreeRow({ node, depth, expanded, onToggleDir, onOpen, activePath }) {
@@ -34,7 +30,7 @@ function TreeRow({ node, depth, expanded, onToggleDir, onOpen, activePath }) {
         ) : (
           <>
             <span className="tree-guide" />
-            <FileTypeIcon kind={node.kind} size={16} />
+            <span className="tree-file-gap" />
           </>
         )}
         <span className="tree-name">{node.name}</span>
@@ -56,7 +52,7 @@ function TreeRow({ node, depth, expanded, onToggleDir, onOpen, activePath }) {
   );
 }
 
-function Explorer({ onOpen, activePath, onNewDraft }) {
+function Explorer({ onOpen, activePath }) {
   const [expanded, setExpanded] = useState(() => {
     const set = new Set([FILE_TREE.path]);
     FILE_TREE.children
@@ -73,44 +69,21 @@ function Explorer({ onOpen, activePath, onNewDraft }) {
       return next;
     });
 
-  const contentOpen = () => setExpanded(new Set([FILE_TREE.path]));
-
   return (
     <div className="sb-view">
       <div className="sb-section-head">
         <ChevronDown size={14} />
         <span className="sb-section-title">资源管理器</span>
-        <div className="sb-section-actions">
-          <button title="新建文件（草稿）" onClick={onNewDraft}>
-            <NewFile size={15} />
-          </button>
-          <button title="刷新（装饰）">
-            <Refresh size={15} />
-          </button>
-          <button title="折叠文件夹" onClick={contentOpen}>
-            <CollapseAll size={15} />
-          </button>
-          <button title="更多操作（装饰）">
-            <More size={15} />
-          </button>
-        </div>
-      </div>
-      <div className="sb-project">
-        <span className="sp-icon">{'{'}</span>
-        <span className="sp-name">{PROFILE.repo.toUpperCase()}</span>
       </div>
       <div className="sb-tree">
-        {FILE_TREE.children.map((child) => (
-          <TreeRow
-            key={child.path}
-            node={child}
-            depth={0}
-            expanded={expanded}
-            onToggleDir={toggleDir}
-            onOpen={onOpen}
-            activePath={activePath}
-          />
-        ))}
+        <TreeRow
+          node={FILE_TREE}
+          depth={0}
+          expanded={expanded}
+          onToggleDir={toggleDir}
+          onOpen={onOpen}
+          activePath={activePath}
+        />
       </div>
       <div className="sb-fill" />
     </div>
@@ -146,11 +119,6 @@ function SearchView({ onOpen }) {
       <div className="sb-section-head">
         <ChevronDown size={14} />
         <span className="sb-section-title">搜索</span>
-        <div className="sb-section-actions">
-          <button title="更多（装饰）">
-            <More size={15} />
-          </button>
-        </div>
       </div>
       <div className="sb-search-box">
         <input
@@ -185,12 +153,10 @@ function SearchView({ onOpen }) {
 }
 
 /* ==================== 侧边栏容器 ==================== */
-export default function Sidebar({ activity, onOpen, activePath, onNewDraft }) {
+export default function Sidebar({ activity, onOpen, activePath }) {
   return (
     <div className="sidebar">
-      {activity === 'explorer' && (
-        <Explorer onOpen={onOpen} activePath={activePath} onNewDraft={onNewDraft} />
-      )}
+      {activity === 'explorer' && <Explorer onOpen={onOpen} activePath={activePath} />}
       {activity === 'search' && <SearchView onOpen={onOpen} />}
     </div>
   );

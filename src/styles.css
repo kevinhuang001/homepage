@@ -1827,3 +1827,44 @@ kbd {
   min-height: 0;
   width: 100%;
 }
+
+/* ============================================================
+   编辑器全局操作按钮列（最右侧，全局唯一）
+   ============================================================ */
+.editor-actions-bar {
+  flex: none;
+  width: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 6px;
+  gap: 2px;
+  background: var(--bg-sidebar);
+  border-left: 1px solid var(--border-soft);
+}
+.ea-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--fg-dim);
+}
+.ea-btn:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+.ea-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.ea-btn .tb-split {
+  font-size: 13px;
+}
+
+/* 文件树：文件行图标位置保留占位（图标已去掉，仅对齐） */
+.tree-file-gap {
+  width: 18px;
+  flex: none;
+}

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Close, Eye, FileTypeIcon, More } from './icons.jsx';
+import { Close, Eye, FileTypeIcon } from './icons.jsx';
 import MarkdownEditor from './MarkdownEditor.jsx';
 import MarkdownView from './MarkdownView.jsx';
 import { isGroup, isSplit } from '../lib/editors.js';
@@ -70,21 +70,8 @@ function EmptyPane({ gid, onOpenReadme, onNewDraft, canDragHere }) {
   );
 }
 
-/* ==================== 组内标签条 ==================== */
-function GroupTabs({
-  g,
-  onSelect,
-  onCloseTab,
-  onDragStart,
-  dirtyIds,
-  onOpenPreview,
-  onSplitCopy,
-  onCloseGroup,
-  groupCount,
-}) {
-  const activeTab = g.tabs.find((t) => t.id === g.active);
-  const isSource = activeTab?.node?.kind === 'md';
-
+/* ==================== 组内标签条（只放标签） ==================== */
+function GroupTabs({ g, onSelect, onCloseTab, onDragStart, dirtyIds }) {
   return (
     <div className="tabbar group-tabbar">
       <div className="tabbar-tabs">
@@ -100,11 +87,7 @@ function GroupTabs({
             onDragStart={(e) => {
               onDragStart(e, g.gid, { id, node });
             }}
-            title={
-              node.kind === 'preview'
-                ? node.name + '（实时预览，可拖拽/关闭）'
-                : `${node.path ? node.path.replace(/^\//, '') : node.name}（可拖拽到其他位置拆分）`
-            }
+            title={node.path ? node.path.replace(/^\//, '') : node.name}
           >
             <FileTypeIcon kind={node.kind === 'preview' ? 'md' : node.kind} size={14} />
             <span className="tab-name">{node.name}</span>
@@ -121,28 +104,6 @@ function GroupTabs({
             </button>
           </div>
         ))}
-      </div>
-      <div className="tabbar-actions">
-        {isSource && (
-          <button
-            className="tb-btn"
-            onClick={() => onOpenPreview(g.gid, activeTab.id, activeTab.node)}
-            title="打开 Markdown 预览到侧边"
-          >
-            <Eye size={14} />
-          </button>
-        )}
-        <button className="tb-btn" onClick={() => onSplitCopy(g.gid)} title="向右拆分当前编辑器（复制一份到新组）">
-          <span className="tb-split">⧉</span>
-        </button>
-        {groupCount > 1 && (
-          <button className="tb-btn" onClick={() => onCloseGroup(g.gid)} title="关闭此编辑器组">
-            <span className="tb-x">✕</span>
-          </button>
-        )}
-        <button className="tb-btn" title="更多操作（装饰）">
-          <More size={14} />
-        </button>
       </div>
     </div>
   );
@@ -167,14 +128,9 @@ function GroupPane(props) {
     onCloseTab,
     onDragStart,
     dirtyIds,
-    onSplitCopy,
-    onCloseGroup,
-    onOpenPreview,
-    groupCount,
     drop,
     getContent,
     setContent,
-    isDirty,
     onOpenFileIn,
     onOpenReadme,
     onNewDraft,
@@ -191,17 +147,7 @@ function GroupPane(props) {
       data-gid={g.gid}
       onMouseDownCapture={() => onFocusGroup(g.gid)}
     >
-      <GroupTabs
-        g={g}
-        onSelect={onSelect}
-        onCloseTab={onCloseTab}
-        onDragStart={onDragStart}
-        dirtyIds={dirtyIds}
-        onOpenPreview={onOpenPreview}
-        onSplitCopy={onSplitCopy}
-        onCloseGroup={onCloseGroup}
-        groupCount={groupCount}
-      />
+      <GroupTabs g={g} onSelect={onSelect} onCloseTab={onCloseTab} onDragStart={onDragStart} dirtyIds={dirtyIds} />
       <div className="group-content">
         {!node && (
           <EmptyPane
@@ -231,6 +177,36 @@ function GroupPane(props) {
   );
 }
 
+/* ==================== 全局操作按钮列（最右侧，全局唯一） ==================== */
+function EditorActionsBar({ tree, focusedGid, onOpenPreview, onSplitTab }) {
+  const g = collectOne(tree, focusedGid);
+  const activeTab = g?.tabs.find((t) => t.id === g.active) ?? null;
+  const node = activeTab?.node ?? null;
+  const isMd = node?.kind === 'md';
+
+  return (
+    <div className="editor-actions-bar" title="编辑器操作">
+      {isMd && (
+        <button
+          className="ea-btn"
+          title="打开 Markdown 预览到侧边"
+          onClick={() => activeTab && onOpenPreview(focusedGid, activeTab.id, node)}
+        >
+          <Eye size={14} />
+        </button>
+      )}
+      <button
+        className="ea-btn"
+        title="向右拆分当前编辑器到新组"
+        disabled={!activeTab}
+        onClick={() => activeTab && onSplitTab(focusedGid, 'right', activeTab, focusedGid)}
+      >
+        <span className="tb-split">⧉</span>
+      </button>
+    </div>
+  );
+}
+
 /* ==================== 分隔条（调整两个组的大小） ==================== */
 function Sash({ sid, dir, ratio, onRatio }) {
   const ref = useRef(null);
@@ -256,12 +232,7 @@ function Sash({ sid, dir, ratio, onRatio }) {
     document.addEventListener('mouseup', up);
   };
   return (
-    <div
-      ref={ref}
-      className={`sash sash-${dir}`}
-      onMouseDown={start}
-      title="拖动调整编辑器组大小"
-    />
+    <div ref={ref} className={`sash sash-${dir}`} onMouseDown={start} title="拖动调整编辑器组大小" />
   );
 }
 
@@ -307,12 +278,6 @@ export default function EditorArea({
   const rootRef = useRef(null);
   const [drag, setDrag] = useState(null);
   const [drop, setDrop] = useState(null);
-
-  const groupCount = tree && isGroup(tree) ? 1 : countGroups(tree);
-  function countGroups(n) {
-    if (isGroup(n)) return 1;
-    return countGroups(n.a) + countGroups(n.b);
-  }
 
   /* 计算悬停的组与拆分方向 */
   const locateDrop = (e) => {
@@ -363,22 +328,14 @@ export default function EditorArea({
     onCloseTab,
     onDragStart: handleDragStart,
     dirtyIds,
-    onSplitCopy: (gid) => {
-      const g = tree && collectOne(tree, gid);
-      const activeTab = g?.tabs.find((t) => t.id === g.active);
-      if (activeTab) onSplitTab(gid, 'right', activeTab, gid);
-    },
-    onOpenPreview,
-    onCloseGroup,
-    onRatio,
+    drop,
     onOpenFileIn,
     onOpenReadme,
     onNewDraft,
     onFocusGroup,
     getContent,
     setContent,
-    isDirty,
-    drop,
+    onRatio,
   };
 
   return (
@@ -395,9 +352,13 @@ export default function EditorArea({
       onDrop={handleDrop}
       onDragEnd={clearDnd}
     >
-      {tree ? (
-        <Pane tree={tree} {...handlers} groupCount={groupCount} focusedGid={focusGid} />
-      ) : null}
+      {tree ? <Pane tree={tree} {...handlers} focusedGid={focusGid} /> : null}
+      <EditorActionsBar
+        tree={tree}
+        focusedGid={focusGid}
+        onOpenPreview={onOpenPreview}
+        onSplitTab={onSplitTab}
+      />
     </div>
   );
 }
