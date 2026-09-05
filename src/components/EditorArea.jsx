@@ -1,25 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { ChevronRight, Close, FileTypeIcon, FolderClosed, More } from './icons.jsx';
+import { Close, FileTypeIcon, More } from './icons.jsx';
 import MarkdownEditor from './MarkdownEditor.jsx';
 import { isGroup, isSplit } from '../lib/editors.js';
 import { assetUrl } from '../utils.js';
-
-/* ==================== 面包屑 ==================== */
-function Breadcrumb({ node }) {
-  if (!node) return null;
-  const segs = node.path ? node.path.replace(/^\//, '').split('/') : [node.name];
-  return (
-    <div className="breadcrumbs">
-      <FolderClosed size={13} color="#8a8a8a" />
-      {segs.map((seg, i) => (
-        <React.Fragment key={`${seg}-${i}`}>
-          {i > 0 && <ChevronRight size={12} />}
-          <span className={i === segs.length - 1 ? 'bc-current' : 'bc-seg'}>{seg}</span>
-        </React.Fragment>
-      ))}
-    </div>
-  );
-}
 
 /* ==================== PDF 预览 ==================== */
 function PdfView({ file }) {
@@ -179,7 +162,6 @@ function GroupPane(props) {
         onCloseGroup={onCloseGroup}
         groupCount={groupCount}
       />
-      <Breadcrumb node={node} />
       <div className="group-content">
         {!node && (
           <EmptyPane
