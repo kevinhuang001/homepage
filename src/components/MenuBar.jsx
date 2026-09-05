@@ -38,6 +38,7 @@ const MENUS = [
     title: '查看',
     items: [
       { label: '命令面板…', key: 'Ctrl+Shift+P', action: 'openPalette' },
+      { label: '打开 Markdown 预览到侧边', key: 'Ctrl+Shift+V', action: 'openPreview' },
       { divider: true },
       { label: '显示终端', key: 'Ctrl+`', action: 'togglePanel' },
       { label: '显示侧边栏', key: 'Ctrl+B', action: 'toggleSidebar' },

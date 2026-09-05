@@ -246,6 +246,12 @@ export const TerminalIcon = ({ size = 14 }) => (
     <path d="M4.8 6l2.4 2.1L4.8 10.2M8.4 10.4h2.8" />
   </S>
 );
+export const Eye = ({ size = 14 }) => (
+  <S size={size} view={16}>
+    <path d="M2 8s2.4-4.4 6-4.4S14 8 14 8s-2.4 4.4-6 4.4S2 8 2 8z" />
+    <circle cx="8" cy="8" r="1.9" />
+  </S>
+);
 
 /* 顶部菜单栏右侧小图标 */
 export const MenuBarIcon = ({ size = 16 }) => (

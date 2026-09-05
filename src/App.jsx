@@ -61,19 +61,32 @@ export default function App() {
   const focusGidRef = useRef(null);
   const nodeById = useRef(new Map()); // tab id -> 文件描述（用于取原始内容）
   const fileInputRef = useRef(null);
+  const openPreviewToSideRef = useRef(null);
 
   const [initialTree] = useState(() => {
     let g = ed.makeGroup([], null);
     if (readmeNode) {
       g = ed.openTab(g, g.gid, { id: readmeNode.path, node: readmeNode });
       nodeById.current.set(readmeNode.path, readmeNode);
+      // 默认把预览分到第二个面板（右侧），还原官方“Preview README.md”独立标签
+      const pnode = {
+        name: `Preview ${readmeNode.name}`,
+        kind: 'preview',
+        sourceId: readmeNode.path,
+        language: 'Markdown 预览',
+      };
+      pnode.uid = uid();
+      const r = ed.splitTabAt(g, g.gid, 'right', { id: pnode.uid, node: pnode }, g.gid);
+      g = r.tree;
     }
     treeRef.current = g;
-    focusGidRef.current = g.gid;
+    focusGidRef.current = ed.collectGroups(g)[0]?.gid ?? g.gid;
     return g;
   });
   const [editorTree, setEditorTree] = useState(initialTree);
-  const [focusGid, setFocusGidState] = useState(initialTree.gid);
+  const [focusGid, setFocusGidState] = useState(
+    () => ed.collectGroups(initialTree)[0]?.gid ?? initialTree.gid,
+  );
 
   /* ---------- 编辑内容（仅内存）：覆写 + 脏标记 ---------- */
   const [overrides, setOverrides] = useState(() => new Map());
@@ -150,13 +163,71 @@ export default function App() {
         (groups.some((g) => g.gid === focusGidRef.current) ? focusGidRef.current : groups[0]?.gid);
       if (!target) return;
       commit(ed.openTab(treeRef.current, target, { id, node }), target);
+      // 打开 .md 源码时，自动把预览分到右侧面板（还原官方设计）
+      if (node.kind === 'md') openPreviewToSideRef.current?.(target, id, node);
+    },
+    [commit],
+  );
+
+  /* ---------- Markdown 预览（独立标签，默认分到右侧面板） ---------- */
+  const openPreviewToSide = useCallback(
+    (groupId, srcId, srcNode) => {
+      if (!srcNode || srcNode.kind !== 'md') return;
+      const tree = treeRef.current;
+      const exists = ed
+        .collectGroups(tree)
+        .some((g) => g.tabs.some((t) => t.node?.kind === 'preview' && t.node.sourceId === srcId));
+      if (exists) return; // 已存在则不再重复拆分，也不抢焦点
+      const targetGid = ed.findGroup(tree, groupId)?.gid;
+      if (!targetGid) return;
+      const pnode = {
+        name: `Preview ${srcNode.name}`,
+        kind: 'preview',
+        sourceId: srcId,
+        language: 'Markdown 预览',
+      };
+      pnode.uid = uid();
+      const { tree: nt } = ed.splitTabAt(tree, targetGid, 'right', { id: pnode.uid, node: pnode }, targetGid);
+      commit(nt, targetGid);
+    },
+    [commit],
+  );
+  openPreviewToSideRef.current = openPreviewToSide;
+
+  const openPreviewForActive = useCallback(() => {
+    const g = ed.findGroup(treeRef.current, focusGidRef.current);
+    const t = g?.tabs.find((tab) => tab.id === g.active);
+    if (t?.node?.kind === 'md') openPreviewToSide(g.gid, t.id, t.node);
+  }, [openPreviewToSide]);
+
+  /* 关闭某源码对应的全部预览组（源码被关闭时联动关闭预览） */
+  const closePreviewForSource = useCallback(
+    (sourceId) => {
+      let t = treeRef.current;
+      let changed = false;
+      for (;;) {
+        const g = ed
+          .collectGroups(t)
+          .find((gr) => gr.tabs.some((tb) => tb.node?.kind === 'preview' && tb.node.sourceId === sourceId));
+        if (!g) break;
+        const [nt] = ed.removeGroup(t, g.gid);
+        t = nt;
+        changed = true;
+      }
+      if (changed) commit(t);
     },
     [commit],
   );
 
   const onCloseTab = useCallback(
-    (gid, id) => commit(ed.closeTab(treeRef.current, gid, id)),
-    [commit],
+    (gid, id) => {
+      const srcGroup = ed.findGroup(treeRef.current, gid);
+      const closedIsSource = srcGroup?.tabs.find((t) => t.id === id)?.node?.kind === 'md';
+      const next = ed.closeTab(treeRef.current, gid, id);
+      commit(next);
+      if (closedIsSource) closePreviewForSource(id);
+    },
+    [commit, closePreviewForSource],
   );
   const onSelectTab = useCallback(
     (gid, id) => commit(ed.selectTab(treeRef.current, gid, id), gid),
@@ -175,10 +246,13 @@ export default function App() {
   );
   const onCloseGroup = useCallback(
     (gid) => {
-      const [next] = ed.removeGroup(treeRef.current, gid);
+      const [next, removed] = ed.removeGroup(treeRef.current, gid);
       commit(next);
+      removed.forEach((tab) => {
+        if (tab?.node?.kind === 'md') closePreviewForSource(tab.id);
+      });
     },
-    [commit],
+    [commit, closePreviewForSource],
   );
   const onRatio = useCallback(
     (sid, ratio) => commit(ed.setRatio(treeRef.current, sid, ratio)),
@@ -321,9 +395,10 @@ export default function App() {
       focusSearch,
       showAbout: () => setAboutOpen(true),
       openPalette: () => setPaletteOpen(true),
+      openPreview: openPreviewForActive,
       openNode,
     }),
-    [openNode, readmeNode, newDraft, openLocal, saveActive, onCloseTab, closeAllEditors, cycleTab, togglePanel, toggleSidebar, focusSearch],
+    [openNode, readmeNode, newDraft, openLocal, saveActive, onCloseTab, closeAllEditors, cycleTab, togglePanel, toggleSidebar, focusSearch, openPreviewForActive],
   );
 
   /* ---------- 全局快捷键 ---------- */
@@ -347,6 +422,11 @@ export default function App() {
         e.preventDefault();
         if (k === 'p') setPaletteOpen(true);
         else focusSearch();
+        return;
+      }
+      if (mod && e.shiftKey && k === 'v') {
+        e.preventDefault();
+        A.openPreview();
         return;
       }
       if (e.key === 'F1' || (mod && k === 'p')) {
@@ -477,6 +557,7 @@ export default function App() {
             onSplitTab={onSplitTab}
             onCloseGroup={onCloseGroup}
             onRatio={onRatio}
+            onOpenPreview={openPreviewToSide}
             onFocusGroup={focusGroup}
             onOpenFileIn={openNode}
             onOpenReadme={(gid) => openNode(readmeNode, gid)}

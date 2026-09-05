@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
-import { Close, FileTypeIcon, More } from './icons.jsx';
+import React, { useMemo, useRef, useState } from 'react';
+import { Close, Eye, FileTypeIcon, More } from './icons.jsx';
 import MarkdownEditor from './MarkdownEditor.jsx';
+import MarkdownView from './MarkdownView.jsx';
 import { isGroup, isSplit } from '../lib/editors.js';
 import { assetUrl } from '../utils.js';
 
@@ -18,6 +19,17 @@ function PdfView({ file }) {
         </a>
       </div>
       <iframe title={file.name} src={src} className="pdf-frame" />
+    </div>
+  );
+}
+
+/* ==================== Markdown 预览（独立标签，实时渲染源文件） ==================== */
+function PreviewView({ node, getContent, onOpen }) {
+  const content = getContent(node.sourceId);
+  const fileLike = useMemo(() => ({ name: node.name, kind: 'md', content }), [node.name, content]);
+  return (
+    <div className="preview-pane">
+      <MarkdownView file={fileLike} onOpen={onOpen} scrollKey={node.uid} />
     </div>
   );
 }
@@ -59,7 +71,20 @@ function EmptyPane({ gid, onOpenReadme, onNewDraft, canDragHere }) {
 }
 
 /* ==================== 组内标签条 ==================== */
-function GroupTabs({ g, onSelect, onCloseTab, onDragStart, dirtyIds, onSplitCopy, onCloseGroup, groupCount }) {
+function GroupTabs({
+  g,
+  onSelect,
+  onCloseTab,
+  onDragStart,
+  dirtyIds,
+  onOpenPreview,
+  onSplitCopy,
+  onCloseGroup,
+  groupCount,
+}) {
+  const activeTab = g.tabs.find((t) => t.id === g.active);
+  const isSource = activeTab?.node?.kind === 'md';
+
   return (
     <div className="tabbar group-tabbar">
       <div className="tabbar-tabs">
@@ -75,9 +100,13 @@ function GroupTabs({ g, onSelect, onCloseTab, onDragStart, dirtyIds, onSplitCopy
             onDragStart={(e) => {
               onDragStart(e, g.gid, { id, node });
             }}
-            title={`${node.path ? node.path.replace(/^\//, '') : node.name}（可拖拽到其他位置拆分）`}
+            title={
+              node.kind === 'preview'
+                ? node.name + '（实时预览，可拖拽/关闭）'
+                : `${node.path ? node.path.replace(/^\//, '') : node.name}（可拖拽到其他位置拆分）`
+            }
           >
-            <FileTypeIcon kind={node.kind} size={14} />
+            <FileTypeIcon kind={node.kind === 'preview' ? 'md' : node.kind} size={14} />
             <span className="tab-name">{node.name}</span>
             {dirtyIds.has(id) && <span className="tab-dot" title="已修改（仅当前页面）" />}
             <button
@@ -94,14 +123,23 @@ function GroupTabs({ g, onSelect, onCloseTab, onDragStart, dirtyIds, onSplitCopy
         ))}
       </div>
       <div className="tabbar-actions">
-        {groupCount > 1 && (
-          <button className="tb-btn" onClick={() => onCloseGroup(g.gid)} title="关闭此编辑器组">
-            <span className="tb-x">✕</span>
+        {isSource && (
+          <button
+            className="tb-btn"
+            onClick={() => onOpenPreview(g.gid, activeTab.id, activeTab.node)}
+            title="打开 Markdown 预览到侧边"
+          >
+            <Eye size={14} />
           </button>
         )}
         <button className="tb-btn" onClick={() => onSplitCopy(g.gid)} title="向右拆分当前编辑器（复制一份到新组）">
           <span className="tb-split">⧉</span>
         </button>
+        {groupCount > 1 && (
+          <button className="tb-btn" onClick={() => onCloseGroup(g.gid)} title="关闭此编辑器组">
+            <span className="tb-x">✕</span>
+          </button>
+        )}
         <button className="tb-btn" title="更多操作（装饰）">
           <More size={14} />
         </button>
@@ -131,6 +169,7 @@ function GroupPane(props) {
     dirtyIds,
     onSplitCopy,
     onCloseGroup,
+    onOpenPreview,
     groupCount,
     drop,
     getContent,
@@ -158,6 +197,7 @@ function GroupPane(props) {
         onCloseTab={onCloseTab}
         onDragStart={onDragStart}
         dirtyIds={dirtyIds}
+        onOpenPreview={onOpenPreview}
         onSplitCopy={onSplitCopy}
         onCloseGroup={onCloseGroup}
         groupCount={groupCount}
@@ -176,9 +216,10 @@ function GroupPane(props) {
             node={node}
             content={getContent(activeTab.id)}
             onChange={(text) => setContent(activeTab.id, text)}
-            onOpenFile={(nd) => onOpenFileIn(nd, g.gid)}
-            dirty={isDirty(activeTab.id)}
           />
+        )}
+        {node && node.kind === 'preview' && (
+          <PreviewView node={node} getContent={getContent} onOpen={(nd) => onOpenFileIn(nd)} />
         )}
         {node && node.kind === 'pdf' && <PdfView file={node} />}
         {node && node.kind === 'raw' && (
@@ -257,6 +298,7 @@ export default function EditorArea({
   onSplitTab,
   onCloseGroup,
   onRatio,
+  onOpenPreview,
   onFocusGroup,
   onOpenFileIn,
   onOpenReadme,
@@ -326,6 +368,7 @@ export default function EditorArea({
       const activeTab = g?.tabs.find((t) => t.id === g.active);
       if (activeTab) onSplitTab(gid, 'right', activeTab, gid);
     },
+    onOpenPreview,
     onCloseGroup,
     onRatio,
     onOpenFileIn,

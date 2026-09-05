@@ -1803,3 +1803,26 @@ kbd {
   flex: 1;
   min-height: 0;
 }
+
+/* ============================================================
+   预览作为独立标签（渲染源文件实时内容）
+   ============================================================ */
+.preview-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-editor);
+}
+.preview-pane .md-scroll {
+  flex: 1;
+  min-height: 0;
+}
+
+/* 纯源码编辑器铺满所在组 */
+.md-editor-wrap.source-only {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  width: 100%;
+}
