@@ -200,6 +200,15 @@ export default function App() {
     if (t?.node?.kind === 'md') openPreviewToSide(g.gid, t.id, t.node);
   }, [openPreviewToSide]);
 
+  /* 挂载对账：任何 .md 源码若还没有预览组，自动补一个（幂等，兼容旧会话热更新） */
+  useEffect(() => {
+    ed.collectGroups(treeRef.current).forEach((g) => {
+      g.tabs.forEach((t) => {
+        if (t.node?.kind === 'md') openPreviewToSide(g.gid, t.id, t.node);
+      });
+    });
+  }, [openPreviewToSide]);
+
   /* 关闭某源码对应的全部预览组（源码被关闭时联动关闭预览） */
   const closePreviewForSource = useCallback(
     (sourceId) => {
