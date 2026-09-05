@@ -35,14 +35,6 @@ const MENUS = [
     ],
   },
   {
-    title: '选择',
-    items: [
-      { label: '全选', key: 'Ctrl+A', disabled: true },
-      { label: '扩大选区', disabled: true },
-      { label: '缩小选区', disabled: true },
-    ],
-  },
-  {
     title: '查看',
     items: [
       { label: '命令面板…', key: 'Ctrl+Shift+P', action: 'openPalette' },
@@ -60,14 +52,6 @@ const MENUS = [
       { divider: true },
       { label: '上一个编辑器', key: 'Alt+←', action: 'cyclePrev' },
       { label: '下一个编辑器', key: 'Alt+→', action: 'cycleNext' },
-    ],
-  },
-  {
-    title: '运行',
-    items: [
-      { label: '开始调试', key: 'F5', disabled: true },
-      { label: '停止调试', key: 'Shift+F5', disabled: true },
-      { label: '运行而不调试', key: 'Ctrl+F5', disabled: true },
     ],
   },
   {

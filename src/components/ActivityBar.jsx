@@ -1,10 +1,7 @@
 import React from 'react';
 import {
   ActivityAccount,
-  ActivityExtensions,
   ActivityFiles,
-  ActivityRun,
-  ActivityScm,
   ActivitySearch,
   ActivitySettings,
 } from './icons.jsx';
@@ -12,9 +9,6 @@ import {
 const TOP = [
   { id: 'explorer', title: '资源管理器 (Ctrl+Shift+E)', Icon: ActivityFiles },
   { id: 'search', title: '搜索 (Ctrl+Shift+F)', Icon: ActivitySearch },
-  { id: 'scm', title: '源代码管理 (Ctrl+Shift+G)', Icon: ActivityScm },
-  { id: 'run', title: '运行和调试 (Ctrl+Shift+D)', Icon: ActivityRun },
-  { id: 'extensions', title: '扩展 (Ctrl+Shift+X)', Icon: ActivityExtensions },
 ];
 
 export default function ActivityBar({ activity, setActivity, sidebarOpen }) {
