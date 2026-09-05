@@ -9,11 +9,6 @@ const PANEL_TABS = [
   { id: 'output', label: '输出' },
 ];
 
-const WELCOME = [
-  { text: '主页迷你终端 —— 输入 help 查看命令。命令在 src/data/terminal.js 里自定义（支持简单 JS）。' },
-  { text: '' },
-];
-
 const OUTPUT_LINES = [
   { dim: true, text: '[主页] 用于展示的示例输出面板' },
   { text: 'vite v6.3.5 dev server running at:' },
@@ -24,7 +19,11 @@ const OUTPUT_LINES = [
 ];
 
 function TerminalPane({ onOpen }) {
-  const [lines, setLines] = useState(WELCOME);
+  const [lines, setLines] = useState(() => {
+    // 打开终端即自动先执行一条 help，把命令列表展示出来
+    const out = runTerminalCommand('help', { open: onOpen, files: ALL_FILES, profile: PROFILE });
+    return [{ text: 'PS C:\\Users\\Kevin\\homepage> help', dim: true }, ...out.lines];
+  });
   const [value, setValue] = useState('');
   const endRef = useRef(null);
   const inputRef = useRef(null);
