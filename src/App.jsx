@@ -174,10 +174,11 @@ export default function App() {
     (groupId, srcId, srcNode) => {
       if (!srcNode || srcNode.kind !== 'md') return;
       const tree = treeRef.current;
+      // 该源码已有预览 -> 不再重复（也不抢焦点）
       const exists = ed
         .collectGroups(tree)
         .some((g) => g.tabs.some((t) => t.node?.kind === 'preview' && t.node.sourceId === srcId));
-      if (exists) return; // 已存在则不再重复拆分，也不抢焦点
+      if (exists) return;
       const targetGid = ed.findGroup(tree, groupId)?.gid;
       if (!targetGid) return;
       const pnode = {
@@ -187,8 +188,16 @@ export default function App() {
         language: 'Markdown 预览',
       };
       pnode.uid = uid();
-      const { tree: nt } = ed.splitTabAt(tree, targetGid, 'right', { id: pnode.uid, node: pnode }, targetGid);
-      commit(nt, targetGid);
+      // 复用已有的预览面板（任何含 preview 标签的组），否则在右侧新建一个分组
+      const previewGroup = ed
+        .collectGroups(tree)
+        .find((g) => g.tabs.some((t) => t.node?.kind === 'preview'));
+      if (previewGroup) {
+        commit(ed.openTab(tree, previewGroup.gid, { id: pnode.uid, node: pnode }), targetGid);
+      } else {
+        const { tree: nt } = ed.splitTabAt(tree, targetGid, 'right', { id: pnode.uid, node: pnode }, targetGid);
+        commit(nt, targetGid);
+      }
     },
     [commit],
   );

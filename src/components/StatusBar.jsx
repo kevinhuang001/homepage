@@ -1,5 +1,5 @@
 import React from 'react';
-import { AccountInitials, Bell, Branch, Check, ErrorDot, Sync, WarnDot } from './icons.jsx';
+import { Bell, Branch, ErrorDot, Sync, WarnDot } from './icons.jsx';
 import { PROFILE } from '../data/vfs.js';
 
 export default function StatusBar({ activeNode, statusMsg }) {
@@ -46,9 +46,6 @@ export default function StatusBar({ activeNode, statusMsg }) {
         </span>
         <span className="sb-item" title="通知（装饰）">
           <Bell />
-        </span>
-        <span className="sb-item" title={`${PROFILE.name}（示例用户）`}>
-          <AccountInitials text={PROFILE.initials} size={18} />
         </span>
       </div>
     </div>

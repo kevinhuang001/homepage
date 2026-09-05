@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  ActivityAccount,
-  ActivityFiles,
-  ActivitySearch,
-  ActivitySettings,
-} from './icons.jsx';
+import { ActivityFiles, ActivitySearch } from './icons.jsx';
 
 const TOP = [
   { id: 'explorer', title: '资源管理器 (Ctrl+Shift+E)', Icon: ActivityFiles },
@@ -33,14 +28,6 @@ export default function ActivityBar({ activity, setActivity, sidebarOpen }) {
             <Icon />
           </button>
         ))}
-      </div>
-      <div className="ab-bottom">
-        <button className="ab-btn" title="管理（装饰）">
-          <ActivitySettings />
-        </button>
-        <button className="ab-btn" title="个人资料（装饰）">
-          <ActivityAccount />
-        </button>
       </div>
     </div>
   );

@@ -1,6 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MenuBarIcon } from './icons.jsx';
-import { PROFILE } from '../data/vfs.js';
 
 /**
  * 顶部菜单栏（仿 VS Code）。下拉项里带 action 的可用，其余为装饰。
@@ -102,9 +100,6 @@ export default function MenuBar({ actions }) {
   return (
     <div className="menubar" ref={rootRef}>
       <div className="menubar-left">
-        <span className="menubar-logo" title="主页 · 仿 VS Code">
-          <span className="logo-mark">&lt;/&gt;</span>
-        </span>
         {MENUS.map((menu) => (
           <div className="menu-root" key={menu.title}>
             <button
@@ -134,15 +129,6 @@ export default function MenuBar({ actions }) {
             )}
           </div>
         ))}
-      </div>
-      <div className="menubar-right">
-        <span className="mb-title">主页 · 仿 VS Code 的个人名片</span>
-        <button className="menubar-icon-btn" title="通知（装饰）">
-          <MenuBarIcon />
-        </button>
-        <button className="menubar-icon-btn acc" title={PROFILE.name} onClick={actions.showAbout}>
-          {PROFILE.initials}
-        </button>
       </div>
     </div>
   );

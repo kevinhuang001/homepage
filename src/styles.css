@@ -1886,3 +1886,79 @@ kbd {
   color: var(--fg-faint);
   font-size: 12.5px;
 }
+
+/* ============================================================
+   Markdown 源码高亮（textarea 透明文字 + 背后高亮层）
+   ============================================================ */
+.md-source-box {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.md-source-hl {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.75;
+  padding: 12px 14px 12px 58px;
+  white-space: pre;
+  color: #d4d4d4;
+}
+.md-source-hl-inner {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+}
+.md-source-hl code {
+  font: inherit;
+  white-space: pre;
+  color: #d4d4d4;
+  background: transparent;
+}
+.md-source-box .md-source {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: transparent;
+  caret-color: #e6e6e6;
+  background: transparent;
+  -webkit-text-fill-color: transparent;
+  scrollbar-width: none;
+}
+.md-source-box .md-source::-webkit-scrollbar {
+  display: none;
+}
+.md-source-box .md-source::selection {
+  background: rgba(38, 79, 120, 0.6);
+  color: transparent;
+}
+
+/* markdown 源码高亮 token 配色 */
+.md-source-hl .hljs-section {
+  color: #dcdcaa;
+  font-weight: 700;
+}
+.md-source-hl .hljs-code,
+.md-source-hl .hljs-bullet,
+.md-source-hl .hljs-quote {
+  color: #8b949e;
+}
+.md-source-hl .hljs-string,
+.md-source-hl .hljs-link {
+  color: #ce9178;
+}
+.md-source-hl .hljs-strong {
+  color: #e6e6e6;
+  font-weight: 700;
+}
+.md-source-hl .hljs-emphasis {
+  color: #e6e6e6;
+  font-style: italic;
+}
