@@ -41,6 +41,14 @@ const pdf = (name, asset) => ({
   asset, // public 目录下的资源路径
 });
 
+const image = (name, asset) => ({
+  type: 'file',
+  name,
+  kind: 'image',
+  language: 'Image',
+  asset,
+});
+
 const dir = (name, children) => ({ type: 'dir', name, children });
 
 /** 文件树结构（文件夹排前、README 置顶，视觉上更像真实项目） */
@@ -56,6 +64,7 @@ export const FILE_TREE = dir(ROOT_NAME, [
     md('教育背景.md', educationRaw),
   ]),
   pdf('简历.pdf', 'files/简历.pdf'),
+  image('示例图片.svg', 'files/示例图片.svg'),
 ]);
 
 /** 给每个节点补齐 path，并拍平出所有文件（供标签页 / 命令面板 / 搜索使用） */

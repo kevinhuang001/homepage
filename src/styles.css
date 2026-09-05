@@ -1829,16 +1829,16 @@ kbd {
 }
 
 /* ============================================================
-   编辑器全局操作按钮列（最右侧，全局唯一）
+   编辑器全局操作（放在标签页同一行的最右侧，横排，全局唯一）
    ============================================================ */
-.editor-actions-bar {
+.editor-actions-top {
   flex: none;
-  width: 30px;
+  align-self: flex-start;
+  height: 35px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding-top: 6px;
   gap: 2px;
+  padding: 0 6px;
   background: var(--bg-sidebar);
   border-left: 1px solid var(--border-soft);
 }
@@ -1863,8 +1863,26 @@ kbd {
   font-size: 13px;
 }
 
-/* 文件树：文件行图标位置保留占位（图标已去掉，仅对齐） */
-.tree-file-gap {
-  width: 18px;
-  flex: none;
+/* 图片查看 */
+.image-view-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  overflow: auto;
+  background: var(--bg-editor);
+}
+.image-view {
+  max-width: 100%;
+  max-height: calc(100% - 40px);
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+.image-view-cap {
+  color: var(--fg-faint);
+  font-size: 12.5px;
 }

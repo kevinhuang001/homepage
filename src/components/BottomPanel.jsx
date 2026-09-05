@@ -6,7 +6,6 @@ const PANEL_TABS = [
   { id: 'terminal', label: '终端' },
   { id: 'problems', label: '问题' },
   { id: 'output', label: '输出' },
-  { id: 'debug', label: '调试控制台' },
 ];
 
 const WELCOME = [
@@ -21,12 +20,6 @@ const OUTPUT_LINES = [
   { text: '➜  ready in 431 ms.' },
   { text: '' },
   { dim: true, text: '[主页] 点击上方“终端”标签试试迷你命令吧' },
-];
-
-const DEBUG_LINES = [
-  { dim: true, text: '调试控制台（装饰）：' },
-  { text: '已连接“主页”。此页面并非真正的 VS Code。' },
-  { text: '可尝试的交互：文件树 / 标签页 / 命令面板 / 底部终端。' },
 ];
 
 function runCommand(input, ctx) {
@@ -175,15 +168,6 @@ export default function BottomPanel({ open, tab, height = 200, setOpen, setTab, 
         {tab === 'output' && (
           <div className="panel-pane">
             {OUTPUT_LINES.map((l, i) => (
-              <div key={i} className={`term-line ${l.dim ? 'dim' : ''}`}>
-                {l.text}
-              </div>
-            ))}
-          </div>
-        )}
-        {tab === 'debug' && (
-          <div className="panel-pane">
-            {DEBUG_LINES.map((l, i) => (
               <div key={i} className={`term-line ${l.dim ? 'dim' : ''}`}>
                 {l.text}
               </div>

@@ -34,6 +34,17 @@ function PreviewView({ node, getContent, onOpen }) {
   );
 }
 
+/* ==================== 图片查看（示例图片等） ==================== */
+function ImageView({ file }) {
+  const src = file.asset ? assetUrl(file.asset) : file.localUrl;
+  return (
+    <div className="image-view-wrap">
+      <img className="image-view" src={src} alt={file.name} />
+      <div className="image-view-cap">{file.name}</div>
+    </div>
+  );
+}
+
 /* ==================== 纯文本（可编辑，仅内存） ==================== */
 function RawView({ content, onChange }) {
   return (
@@ -167,6 +178,7 @@ function GroupPane(props) {
         {node && node.kind === 'preview' && (
           <PreviewView node={node} getContent={getContent} onOpen={(nd) => onOpenFileIn(nd)} />
         )}
+        {node && node.kind === 'image' && <ImageView file={node} />}
         {node && node.kind === 'pdf' && <PdfView file={node} />}
         {node && node.kind === 'raw' && (
           <RawView content={getContent(activeTab.id)} onChange={(text) => setContent(activeTab.id, text)} />
@@ -185,7 +197,7 @@ function EditorActionsBar({ tree, focusedGid, onOpenPreview, onSplitTab }) {
   const isMd = node?.kind === 'md';
 
   return (
-    <div className="editor-actions-bar" title="编辑器操作">
+    <div className="editor-actions-top" title="编辑器操作">
       {isMd && (
         <button
           className="ea-btn"

@@ -98,6 +98,22 @@ const FILE_TYPE_STYLE = {
 };
 
 export function FileTypeIcon({ kind = 'md', size = 16 }) {
+  if (kind === 'image') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="0.8" y="0.8" width="14.4" height="14.4" rx="2.4" fill="#7c8fd1" />
+        <rect x="3" y="4.6" width="10" height="6.8" rx="1" fill="none" stroke="#ffffff" strokeWidth="1.1" />
+        <circle cx="6.1" cy="7.1" r="1" fill="#ffffff" />
+        <path
+          d="M3.4 10.4l2.5-2.3 2 1.8 2.7-2.7 2.4 2.4"
+          fill="none"
+          stroke="#ffffff"
+          strokeWidth="1"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
   const style = FILE_TYPE_STYLE[kind] || { bg: '#848484', fg: '#fff', label: '·' };
   const fs = style.label.length > 2 ? 5.6 : 7;
   return (

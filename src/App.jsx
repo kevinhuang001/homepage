@@ -353,6 +353,16 @@ export default function App() {
         });
         return;
       }
+      if (/\.(png|jpe?g|gif|svg|webp|bmp)$/i.test(file.name)) {
+        openNode({
+          name: file.name,
+          kind: 'image',
+          language: 'Image',
+          localUrl: URL.createObjectURL(file),
+          path: null,
+        });
+        return;
+      }
       const reader = new FileReader();
       reader.onload = () => {
         openNode({
@@ -592,7 +602,7 @@ export default function App() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".md,.markdown,.txt,.pdf,application/pdf"
+        accept=".md,.markdown,.txt,.pdf,application/pdf,.png,.jpg,.jpeg,.gif,.svg,.webp,image/*"
         style={{ display: 'none' }}
         onChange={onLocalFile}
       />

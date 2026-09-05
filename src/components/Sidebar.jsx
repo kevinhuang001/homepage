@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import {
-  ChevronDown,
   ChevronRight,
   FileTypeIcon,
   FolderClosed,
@@ -30,7 +29,7 @@ function TreeRow({ node, depth, expanded, onToggleDir, onOpen, activePath }) {
         ) : (
           <>
             <span className="tree-guide" />
-            <span className="tree-file-gap" />
+            <FileTypeIcon kind={node.kind} size={16} />
           </>
         )}
         <span className="tree-name">{node.name}</span>
@@ -72,7 +71,6 @@ function Explorer({ onOpen, activePath }) {
   return (
     <div className="sb-view">
       <div className="sb-section-head">
-        <ChevronDown size={14} />
         <span className="sb-section-title">资源管理器</span>
       </div>
       <div className="sb-tree">
@@ -117,7 +115,6 @@ function SearchView({ onOpen }) {
   return (
     <div className="sb-view">
       <div className="sb-section-head">
-        <ChevronDown size={14} />
         <span className="sb-section-title">搜索</span>
       </div>
       <div className="sb-search-box">
