@@ -22,7 +22,7 @@ function TerminalPane({ onOpen }) {
   const [lines, setLines] = useState(() => {
     // 打开终端即自动先执行一条 help，把命令列表展示出来
     const out = runTerminalCommand('help', { open: onOpen, files: ALL_FILES, profile: PROFILE });
-    return [{ text: 'PS C:\\Users\\Kevin\\homepage> help', dim: true }, ...out.lines];
+    return [{ text: 'PS C:\\Users\\Kevin\\homepage> help' }, ...out.lines];
   });
   const [value, setValue] = useState('');
   const endRef = useRef(null);

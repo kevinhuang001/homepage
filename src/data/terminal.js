@@ -32,12 +32,10 @@
  */
 
 /** help 命令：动态列出所有命令 */
-const buildHelp = () => [
-  { dim: true, text: '可用命令（在 src/data/terminal.js 里可自定义）：' },
-  ...TERMINAL_COMMANDS.map((c) => ({
+const buildHelp = () =>
+  TERMINAL_COMMANDS.map((c) => ({
     text: `  ${(c.usage || c.name).padEnd(14)} ${c.desc}`,
-  })),
-];
+  }));
 
 export const TERMINAL_COMMANDS = [
   {
