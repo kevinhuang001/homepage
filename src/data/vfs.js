@@ -12,6 +12,7 @@ import skillsRaw from '../content/技能特长.md?raw';
 import contactRaw from '../content/联系方式.md?raw';
 import projectsRaw from '../content/项目经历.md?raw';
 import educationRaw from '../content/教育背景.md?raw';
+import terminalSpecRaw from '../content/终端命令.md?raw';
 
 /** 站主信息（状态栏头像、菜单等处会用到，记得替换） */
 export const PROFILE = {
@@ -54,6 +55,7 @@ const dir = (name, children) => ({ type: 'dir', name, children });
 /** 文件树结构（文件夹排前、README 置顶，视觉上更像真实项目） */
 export const FILE_TREE = dir(ROOT_NAME, [
   md('README.md', readmeRaw),
+  md('终端命令.md', terminalSpecRaw),
   dir('个人信息', [
     md('关于我.md', aboutRaw),
     md('技能特长.md', skillsRaw),
