@@ -15,7 +15,7 @@ const MENUS = [
       { label: '打开文件…', key: 'Ctrl+O', action: 'openLocal' },
       { label: '打开文件夹…', disabled: true },
       { divider: true },
-      { label: '保存', key: 'Ctrl+S', disabled: true },
+      { label: '保存', key: 'Ctrl+S', action: 'save' },
       { label: '全部保存', disabled: true },
       { divider: true },
       { label: '关闭编辑器', key: 'Ctrl+W', action: 'closeActive' },

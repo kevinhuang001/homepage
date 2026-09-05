@@ -2,7 +2,7 @@ import React from 'react';
 import { AccountInitials, Bell, Branch, Check, ErrorDot, Sync, WarnDot } from './icons.jsx';
 import { PROFILE } from '../data/vfs.js';
 
-export default function StatusBar({ activeNode }) {
+export default function StatusBar({ activeNode, statusMsg }) {
   return (
     <div className="statusbar">
       <div className="sb-left">
@@ -23,9 +23,15 @@ export default function StatusBar({ activeNode }) {
         </span>
       </div>
       <div className="sb-right">
-        <span className="sb-item" title="行号与列号（装饰）">
-          Ln 1, Col 1
-        </span>
+        {statusMsg ? (
+          <span className="sb-item flash" title="演示提示">
+            {statusMsg}
+          </span>
+        ) : (
+          <span className="sb-item" title="行号与列号（装饰）">
+            Ln 1, Col 1
+          </span>
+        )}
         <span className="sb-item" title="空格：2（装饰）">
           空格: 2
         </span>

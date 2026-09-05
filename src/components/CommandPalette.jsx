@@ -10,6 +10,7 @@ const ZapIcon = () => (
 
 const COMMANDS = [
   { label: '打开 README.md', run: 'openReadme' },
+  { label: '保存当前文件（演示 · 不写盘）', run: 'save' },
   { label: '新建草稿文件', run: 'newDraft' },
   { label: '打开本地文件…', run: 'openLocal' },
   { label: '切换终端面板', run: 'togglePanel' },

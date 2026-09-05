@@ -145,10 +145,10 @@ function ProblemsPane() {
   );
 }
 
-export default function BottomPanel({ open, tab, setOpen, setTab, onOpen }) {
+export default function BottomPanel({ open, tab, height = 200, setOpen, setTab, onOpen }) {
   if (!open) return null;
   return (
-    <div className="bottom-panel">
+    <div className="bottom-panel" style={{ height }}>
       <div className="panel-head">
         {PANEL_TABS.map((t) => (
           <button

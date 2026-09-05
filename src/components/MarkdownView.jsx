@@ -9,16 +9,16 @@ import { assetUrl } from '../utils.js';
  * - 站内相对链接（如 个人信息/关于我.md）点击后直接打开对应文件；
  * - 外链自动新窗口打开。
  */
-export default function MarkdownView({ file, onOpen }) {
+export default function MarkdownView({ file, onOpen, scrollKey }) {
   const outerRef = useRef(null);
   const bodyRef = useRef(null);
 
   const html = useMemo(() => renderMarkdown(file.content), [file.content]);
 
-  // 切换文件时回到顶部
+  // 切换文件时回到顶部（scrollKey 变化才重置，编辑刷新预览时不打扰阅读位置）
   useEffect(() => {
     outerRef.current?.scrollTo({ top: 0 });
-  }, [file]);
+  }, [scrollKey]);
 
   // 代码高亮 + 链接处理
   useEffect(() => {
