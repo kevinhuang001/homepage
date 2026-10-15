@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" role="img" aria-label="示例图片">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f2027"/>
+      <stop offset="0.5" stop-color="#203a43"/>
+      <stop offset="1" stop-color="#2c5364"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="400" fill="url(#sky)"/>
+  <circle cx="520" cy="88" r="46" fill="#ffd66b" opacity="0.92"/>
+  <path d="M0 320 L150 170 L290 320 Z" fill="#203a43" opacity="0.85"/>
+  <path d="M170 335 L360 150 L560 335 Z" fill="#15242e"/>
+  <path d="M0 400 L640 400 L640 360 L500 300 L360 380 L220 300 L80 400 Z" fill="#0c1a21"/>
+  <text x="42" y="92" font-size="40" fill="#ffffff" font-family="'Microsoft YaHei', sans-serif" font-weight="600">示例图片</text>
+  <text x="44" y="132" font-size="17" fill="#a9c4d8" font-family="'Microsoft YaHei', sans-serif">这张图片会被当作一个文件打开并展示 👀</text>
+</svg>
