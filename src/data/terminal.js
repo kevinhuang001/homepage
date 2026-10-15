@@ -49,7 +49,7 @@ export const TERMINAL_COMMANDS = [
     desc: '列出项目文件',
     aliases: ['dir'],
     run: (arg, ctx) => [
-      { dim: true, text: '目录：C:\\Users\\Kevin\\homepage（模拟）' },
+      { dim: true, text: `目录：/${ctx.profile.repo}（模拟工作区）` },
       ...ctx.files.map((f) => ({
         text: `  ${f.path.replace(/^\//, '')}`,
         dim: f.kind !== 'md',
@@ -97,7 +97,7 @@ export const TERMINAL_COMMANDS = [
   {
     name: 'pwd',
     desc: '当前目录',
-    run: () => [{ text: 'C:\\Users\\Kevin\\homepage' }],
+    run: (arg, ctx) => [{ text: `/${ctx.profile.repo}` }],
   },
   {
     name: 'date',
