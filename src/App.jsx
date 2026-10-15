@@ -8,14 +8,16 @@ import StatusBar from './components/StatusBar.jsx';
 import CommandPalette from './components/CommandPalette.jsx';
 import AboutDialog from './components/AboutDialog.jsx';
 import { ALL_FILES } from './data/vfs.js';
+import { SITE } from './config/site.js';
+import { readSavedDocs, writeSavedDocs } from './lib/storage.js';
 import * as ed from './lib/editors.js';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 const DRAFT_CONTENT = `# 未命名.md（草稿）
 
-> 我由「资源管理器 → 新建文件」创建。这里可以**直接打字编辑**，右侧预览会实时刷新。
-> 提醒：内容只保存在当前页面内存里，刷新或关闭就会消失 —— 这就是“不会真的保存”的演示 😄
+> 这是浏览器中的临时草稿。使用「打开 Markdown 预览到侧边」可以查看渲染结果。
+> 提醒：草稿不会上传到服务器。按 Ctrl+S 可以下载文件副本。
 
 ## 待办
 
@@ -51,17 +53,17 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(272);
   const [panel, setPanel] = useState({ open: false, tab: 'terminal', height: 210 });
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteMode, setPaletteMode] = useState(null); // 'files' (Ctrl+P) 或 'commands' (Ctrl+Shift+P)
   const [aboutOpen, setAboutOpen] = useState(false);
 
-  const readmeNode = useMemo(() => ALL_FILES.find((f) => f.name === 'README.md'), []);
+  const readmeNode = useMemo(() => ALL_FILES.find((f) => f.name === SITE.initialFile), []);
 
   /* ---------- 编辑器组树（核心状态） ---------- */
   const treeRef = useRef(null);
   const focusGidRef = useRef(null);
-  const nodeById = useRef(new Map()); // tab id -> 文件描述（用于取原始内容）
+  const nodeById = useRef(new Map()); // id -> 原始文件内容
+  const savedDocs = useRef(readSavedDocs()); // Ctrl+S 后持久保存在本浏览器
   const fileInputRef = useRef(null);
-  const openPreviewToSideRef = useRef(null);
 
   const [initialTree] = useState(() => {
     let g = ed.makeGroup([], null);
@@ -88,7 +90,7 @@ export default function App() {
     () => ed.collectGroups(initialTree)[0]?.gid ?? initialTree.gid,
   );
 
-  /* ---------- 编辑内容（仅内存）：覆写 + 脏标记 ---------- */
+  /* ---------- 编辑内容：未保存的覆写 + 显式保存的浏览器持久化 ---------- */
   const [overrides, setOverrides] = useState(() => new Map());
   const [dirty, setDirty] = useState(() => new Set());
   const [statusMsg, setStatusMsg] = useState(null);
@@ -123,8 +125,16 @@ export default function App() {
 
     // 清理已不存在标签的编辑缓冲（模拟“关闭即丢弃未保存内容”）
     const present = new Set(allTabIds(next));
+    // Markdown 预览是独立编辑器：即使源码标签关闭，预览仍能访问源内容。
+    ed.collectGroups(next).forEach((group) => group.tabs.forEach((tab) => {
+      if (tab.node?.kind === 'preview') present.add(tab.node.sourceId);
+    }));
     nodeById.current.forEach((_, id) => {
-      if (!present.has(id)) nodeById.current.delete(id);
+      if (!present.has(id)) {
+        const node = nodeById.current.get(id);
+        if (node?.localUrl) URL.revokeObjectURL(node.localUrl);
+        nodeById.current.delete(id);
+      }
     });
     setOverrides((prev) => {
       let changed = false;
@@ -163,8 +173,6 @@ export default function App() {
         (groups.some((g) => g.gid === focusGidRef.current) ? focusGidRef.current : groups[0]?.gid);
       if (!target) return;
       commit(ed.openTab(treeRef.current, target, { id, node }), target);
-      // 打开 .md 源码时，自动把预览分到右侧面板（还原官方设计）
-      if (node.kind === 'md') openPreviewToSideRef.current?.(target, id, node);
     },
     [commit],
   );
@@ -201,7 +209,6 @@ export default function App() {
     },
     [commit],
   );
-  openPreviewToSideRef.current = openPreviewToSide;
 
   const openPreviewForActive = useCallback(() => {
     const g = ed.findGroup(treeRef.current, focusGidRef.current);
@@ -209,43 +216,15 @@ export default function App() {
     if (t?.node?.kind === 'md') openPreviewToSide(g.gid, t.id, t.node);
   }, [openPreviewToSide]);
 
-  /* 挂载对账：任何 .md 源码若还没有预览组，自动补一个（幂等，兼容旧会话热更新） */
-  useEffect(() => {
-    ed.collectGroups(treeRef.current).forEach((g) => {
-      g.tabs.forEach((t) => {
-        if (t.node?.kind === 'md') openPreviewToSide(g.gid, t.id, t.node);
-      });
-    });
-  }, [openPreviewToSide]);
-
-  /* 关闭某源码对应的全部预览组（源码被关闭时联动关闭预览） */
-  const closePreviewForSource = useCallback(
-    (sourceId) => {
-      let t = treeRef.current;
-      let changed = false;
-      for (;;) {
-        const g = ed
-          .collectGroups(t)
-          .find((gr) => gr.tabs.some((tb) => tb.node?.kind === 'preview' && tb.node.sourceId === sourceId));
-        if (!g) break;
-        const [nt] = ed.removeGroup(t, g.gid);
-        t = nt;
-        changed = true;
-      }
-      if (changed) commit(t);
-    },
-    [commit],
-  );
-
+  // 源码与预览按 VS Code 逻辑独立打开/关闭，不在打开文件时强行拆分编辑器。
   const onCloseTab = useCallback(
     (gid, id) => {
-      const srcGroup = ed.findGroup(treeRef.current, gid);
-      const closedIsSource = srcGroup?.tabs.find((t) => t.id === id)?.node?.kind === 'md';
-      const next = ed.closeTab(treeRef.current, gid, id);
-      commit(next);
-      if (closedIsSource) closePreviewForSource(id);
+      const occurrences = allTabIds(treeRef.current).filter((tabId) => tabId === id).length;
+      if (dirty.has(id) && occurrences <= 1 &&
+        !window.confirm('此文件有未保存的修改。关闭并放弃修改吗？')) return;
+      commit(ed.closeTab(treeRef.current, gid, id));
     },
-    [commit, closePreviewForSource],
+    [commit, dirty],
   );
   const onSelectTab = useCallback(
     (gid, id) => commit(ed.selectTab(treeRef.current, gid, id), gid),
@@ -264,13 +243,15 @@ export default function App() {
   );
   const onCloseGroup = useCallback(
     (gid) => {
-      const [next, removed] = ed.removeGroup(treeRef.current, gid);
+      const group = ed.findGroup(treeRef.current, gid);
+      const atRisk = group?.tabs.some((tab) =>
+        dirty.has(tab.id) && allTabIds(treeRef.current).filter((id) => id === tab.id).length === 1,
+      );
+      if (atRisk && !window.confirm('此编辑器组存在未保存的修改。确定关闭？')) return;
+      const [next] = ed.removeGroup(treeRef.current, gid);
       commit(next);
-      removed.forEach((tab) => {
-        if (tab?.node?.kind === 'md') closePreviewForSource(tab.id);
-      });
     },
-    [commit, closePreviewForSource],
+    [commit, dirty],
   );
   const onRatio = useCallback(
     (sid, ratio) => commit(ed.setRatio(treeRef.current, sid, ratio)),
@@ -278,7 +259,10 @@ export default function App() {
   );
   const focusGroup = useCallback((gid) => setFocusGid(gid), [setFocusGid]);
 
-  const closeAllEditors = useCallback(() => commit(wipeAllTabs(treeRef.current)), [commit]);
+  const closeAllEditors = useCallback(() => {
+    if (dirty.size && !window.confirm('所有未保存的修改将被放弃。仍要关闭所有编辑器吗？')) return;
+    commit(wipeAllTabs(treeRef.current));
+  }, [commit, dirty]);
 
   const cycleTab = useCallback(
     (dir) => {
@@ -291,14 +275,14 @@ export default function App() {
     [commit],
   );
 
-  /* ---------- 编辑（内存级，不写盘） ---------- */
+  /* ---------- 编辑缓冲区（修改期间驻留内存；显式保存时写浏览器本地存储） ---------- */
   const getContent = useCallback((id) => {
     const o = overrides.get(id);
-    return o !== undefined ? o : nodeById.current.get(id)?.content ?? '';
+    return o !== undefined ? o : savedDocs.current.get(id) ?? nodeById.current.get(id)?.content ?? '';
   }, [overrides]);
 
   const setContent = useCallback((id, text) => {
-    const orig = nodeById.current.get(id)?.content ?? '';
+    const orig = savedDocs.current.get(id) ?? nodeById.current.get(id)?.content ?? '';
     setOverrides((prev) => {
       if (prev.get(id) === text) return prev;
       const nm = new Map(prev);
@@ -316,18 +300,63 @@ export default function App() {
     });
   }, []);
 
+  const downloadText = useCallback((node, content) => {
+    const objectUrl = URL.createObjectURL(new Blob([content], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = node.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  }, []);
+
   const saveActive = useCallback(() => {
-    const g = ed.findGroup(treeRef.current, focusGidRef.current);
-    const id = g?.active;
-    if (!id) return;
+    const group = ed.findGroup(treeRef.current, focusGidRef.current);
+    const tab = group?.tabs.find((item) => item.id === group.active);
+    const node = tab?.node;
+    if (!node || !['md', 'raw'].includes(node.kind)) {
+      flash('当前编辑器是只读视图');
+      return;
+    }
+    const id = tab.id;
+    const content = getContent(id);
+    if (!node.path) {
+      downloadText(node, content); // 草稿/本地导入的文件不能擅自写回原磁盘
+      setDirty((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      // 下载成功不意味着磁盘文件已覆盖；仍保留页面编辑缓冲。
+      flash('已下载文件副本（浏览器不能覆盖原文件）');
+      return;
+    }
+    const next = new Map(savedDocs.current);
+    next.set(id, content);
+    if (!writeSavedDocs(next)) {
+      flash('保存失败：浏览器本地存储不可用或空间不足');
+      return;
+    }
+    savedDocs.current = next;
     setDirty((prev) => {
-      if (!prev.has(id)) return prev;
-      const ns = new Set(prev);
-      ns.delete(id);
-      return ns;
+      const updated = new Set(prev);
+      updated.delete(id);
+      return updated;
     });
-    flash('已保存 ✓（演示：内容仅保留在当前页面，不会写入磁盘）');
-  }, [flash]);
+    flash('已保存到此浏览器 · 不会修改 Git 仓库');
+  }, [getContent, downloadText, flash]);
+
+  // 刷新/离开页面前提醒用户；保存过的仓库文件可以从浏览器本地存储恢复。
+  useEffect(() => {
+    if (dirty.size === 0) return undefined;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
 
   /* ---------- 本地文件 / 草稿 ---------- */
   const newDraft = useCallback(
@@ -421,8 +450,10 @@ export default function App() {
       togglePanel,
       toggleSidebar,
       focusSearch,
+      focusExplorer: () => { setActivityState('explorer'); setSidebarOpen(true); },
       showAbout: () => setAboutOpen(true),
-      openPalette: () => setPaletteOpen(true),
+      openPalette: () => setPaletteMode('commands'),
+      openQuickOpen: () => setPaletteMode('files'),
       openPreview: openPreviewForActive,
       openNode,
     }),
@@ -431,7 +462,7 @@ export default function App() {
 
   /* ---------- 全局快捷键 ---------- */
   const actionsRef = useRef({});
-  actionsRef.current = { ...actions, activeNodeId: null, paletteOpen, aboutOpen };
+  actionsRef.current = { ...actions, paletteMode, aboutOpen };
 
   useEffect(() => {
     const onKey = (e) => {
@@ -440,16 +471,17 @@ export default function App() {
       const k = e.key.toLowerCase();
 
       if (e.key === 'Escape') {
-        if (A.paletteOpen) setPaletteOpen(false);
+        if (A.paletteMode) setPaletteMode(null);
         else if (A.aboutOpen) setAboutOpen(false);
         else if (!mod && !/^(INPUT|TEXTAREA)$/i.test(e.target.tagName))
           setPanel((p) => ({ ...p, open: false }));
         return;
       }
-      if (mod && e.shiftKey && (k === 'p' || k === 'f')) {
+      if (mod && e.shiftKey && ['p', 'f', 'e'].includes(k)) {
         e.preventDefault();
-        if (k === 'p') setPaletteOpen(true);
-        else focusSearch();
+        if (k === 'p') A.openPalette();
+        else if (k === 'f') A.focusSearch();
+        else A.focusExplorer();
         return;
       }
       if (mod && e.shiftKey && k === 'v') {
@@ -457,9 +489,10 @@ export default function App() {
         A.openPreview();
         return;
       }
-      if (e.key === 'F1' || (mod && k === 'p')) {
+      if (e.key === 'F1' || (mod && k === 'p' && !e.shiftKey)) {
         e.preventDefault();
-        setPaletteOpen(true);
+        if (e.key === 'F1') A.openPalette();
+        else A.openQuickOpen();
         return;
       }
       if (mod && k === '`') {
@@ -470,11 +503,6 @@ export default function App() {
       if (mod && k === 'b') {
         e.preventDefault();
         A.toggleSidebar();
-        return;
-      }
-      if (mod && k === 'f') {
-        e.preventDefault();
-        A.focusSearch();
         return;
       }
       if (mod && k === 'w') {
@@ -497,6 +525,16 @@ export default function App() {
         A.openLocal();
         return;
       }
+      if (mod && e.key === 'Tab') {
+        e.preventDefault();
+        if (e.shiftKey) A.cyclePrev(); else A.cycleNext();
+        return;
+      }
+      if (mod && (e.key === 'PageUp' || e.key === 'PageDown')) {
+        e.preventDefault();
+        if (e.key === 'PageUp') A.cyclePrev(); else A.cycleNext();
+        return;
+      }
       if (e.altKey && e.key === 'ArrowLeft') {
         e.preventDefault();
         A.cyclePrev();
@@ -507,7 +545,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [panel.open, paletteOpen, aboutOpen, focusSearch]);
+  }, [paletteMode, aboutOpen]);
 
   /* ---------- 侧边栏宽度拖拽 ---------- */
   const startResize = (e) => {
@@ -552,6 +590,12 @@ export default function App() {
   const activeTab = focusGroupObj?.tabs.find((t) => t.id === focusGroupObj.active) ?? null;
   const activeNode = activeTab?.node ?? null;
 
+  useEffect(() => {
+    document.title = SITE.title;
+    const meta = document.querySelector('meta[name="description"]');
+    if (meta) meta.setAttribute('content', SITE.description);
+  }, []);
+
   return (
     <div className="app">
       <MenuBar actions={actions} />
@@ -566,6 +610,7 @@ export default function App() {
               onOpen={openNode}
               activePath={activeNode?.path ?? null}
               onNewDraft={() => newDraft()}
+              getContent={getContent}
             />
             <div className="resizer" onMouseDown={startResize} title="拖动调整宽度" />
           </div>
@@ -605,7 +650,9 @@ export default function App() {
 
       <StatusBar activeNode={activeNode} statusMsg={statusMsg?.text} />
 
-      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} actions={actions} />}
+      {paletteMode && (
+        <CommandPalette mode={paletteMode} onClose={() => setPaletteMode(null)} actions={actions} />
+      )}
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
 
       <input
