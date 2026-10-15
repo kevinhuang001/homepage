@@ -1963,3 +1963,65 @@ kbd {
   color: #e6e6e6;
   font-style: italic;
 }
+
+/* 标签右键菜单：固定定位避免被编辑器组 overflow 裁切 */
+.editor-context-menu {
+  position: fixed;
+  z-index: 1100;
+  min-width: 194px;
+  padding: 5px;
+  background: var(--bg-sidebar);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .55);
+}
+.editor-context-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 12px;
+  border-radius: 3px;
+}
+.editor-context-menu button:hover,
+.editor-context-menu button:focus-visible {
+  background: var(--accent);
+  color: white;
+}
+.editor-tab:focus-visible,
+.tree-row:focus-visible,
+.sb-result:focus-visible,
+.ab-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+/* 当前源码编辑器内部查找。 */
+.md-findbar {
+  position: absolute;
+  right: 20px;
+  top: 9px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 12;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-sidebar);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .45);
+}
+.md-findbar input {
+  min-width: 130px;
+  max-width: 220px;
+  background: var(--bg-input);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  padding: 4px 7px;
+}
+.md-findbar input:focus { outline: 1px solid var(--accent); }
+.md-findbar button {
+  min-width: 23px;
+  height: 24px;
+  border-radius: 3px;
+  font-size: 15px;
+}
+.md-findbar button:hover { background: var(--bg-hover); }

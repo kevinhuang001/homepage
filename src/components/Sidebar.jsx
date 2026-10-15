@@ -90,7 +90,7 @@ function Explorer({ onOpen, activePath }) {
 }
 
 /* ==================== 搜索（匹配文件名与内容） ==================== */
-function SearchView({ onOpen }) {
+function SearchView({ onOpen, getContent }) {
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => {
@@ -98,9 +98,10 @@ function SearchView({ onOpen }) {
     if (!q) return [];
     const out = [];
     for (const f of ALL_FILES) {
-      const hay = (f.name + '\n' + (f.content || '')).toLowerCase();
+      const content = getContent(f.path);
+      const hay = (f.name + '\n' + content).toLowerCase();
       if (!hay.includes(q)) continue;
-      const lines = (f.content || '').split('\n');
+      const lines = content.split('\n');
       let snippet = '';
       for (const line of lines) {
         if (line.toLowerCase().includes(q)) {
@@ -111,7 +112,7 @@ function SearchView({ onOpen }) {
       out.push({ file: f, snippet });
     }
     return out.slice(0, 60);
-  }, [query]);
+  }, [query, getContent]);
 
   return (
     <div className="sb-view">
@@ -151,11 +152,11 @@ function SearchView({ onOpen }) {
 }
 
 /* ==================== 侧边栏容器 ==================== */
-export default function Sidebar({ activity, onOpen, activePath }) {
+export default function Sidebar({ activity, onOpen, activePath, getContent }) {
   return (
     <div className="sidebar">
       {activity === 'explorer' && <Explorer onOpen={onOpen} activePath={activePath} />}
-      {activity === 'search' && <SearchView onOpen={onOpen} />}
+      {activity === 'search' && <SearchView onOpen={onOpen} getContent={getContent} />}
     </div>
   );
 }

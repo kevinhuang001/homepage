@@ -1,0 +1,48 @@
+name: Verify and build GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+      - name: Build static site
+        run: npm run build
+      - name: Publish build into tracked docs directory
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          rm -rf docs
+          mkdir -p docs
+          cp -a dist/. docs/
+          touch docs/.nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f docs
+          if ! git diff --cached --quiet; then
+            git commit -m "build(pages): update /docs static output [skip ci]"
+            git push
+          fi

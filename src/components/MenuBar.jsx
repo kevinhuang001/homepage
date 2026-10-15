@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * 顶部菜单栏（仿 VS Code）。下拉项里带 action 的可用，其余为装饰。
+ * 顶部菜单栏：仅展示真实可执行动作，避免误导访客。
  * actions: { openPalette, newDraft, openLocal, closeActive, closeAll,
  *            toggleSidebar, togglePanel, focusSearch, cycleTab, openReadme, showAbout }
  */
@@ -11,10 +11,8 @@ const MENUS = [
     items: [
       { label: '新建文件…', key: 'Ctrl+N', action: 'newDraft' },
       { label: '打开文件…', key: 'Ctrl+O', action: 'openLocal' },
-      { label: '打开文件夹…', disabled: true },
       { divider: true },
       { label: '保存', key: 'Ctrl+S', action: 'save' },
-      { label: '全部保存', disabled: true },
       { divider: true },
       { label: '关闭编辑器', key: 'Ctrl+W', action: 'closeActive' },
       { label: '关闭所有编辑器', action: 'closeAll' },
@@ -23,13 +21,8 @@ const MENUS = [
   {
     title: '编辑',
     items: [
-      { label: '撤销', key: 'Ctrl+Z', disabled: true },
-      { label: '重做', key: 'Ctrl+Shift+Z', disabled: true },
-      { divider: true },
-      { label: '查找', key: 'Ctrl+F', action: 'focusSearch' },
-      { label: '替换', key: 'Ctrl+H', disabled: true },
-      { divider: true },
-      { label: '全选', key: 'Ctrl+A', disabled: true },
+      { label: '在工作区中搜索', key: 'Ctrl+Shift+F', action: 'focusSearch' },
+      { label: '打开资源管理器', key: 'Ctrl+Shift+E', action: 'focusExplorer' },
     ],
   },
   {
@@ -41,24 +34,21 @@ const MENUS = [
       { label: '显示终端', key: 'Ctrl+`', action: 'togglePanel' },
       { label: '显示侧边栏', key: 'Ctrl+B', action: 'toggleSidebar' },
       { divider: true },
-      { label: '打开视图', disabled: true },
     ],
   },
   {
     title: '转到',
     items: [
-      { label: '转到文件…', key: 'Ctrl+P', action: 'openPalette' },
+      { label: '转到文件…', key: 'Ctrl+P', action: 'openQuickOpen' },
       { divider: true },
-      { label: '上一个编辑器', key: 'Alt+←', action: 'cyclePrev' },
-      { label: '下一个编辑器', key: 'Alt+→', action: 'cycleNext' },
+      { label: '上一个编辑器', key: 'Ctrl+Shift+Tab', action: 'cyclePrev' },
+      { label: '下一个编辑器', key: 'Ctrl+Tab', action: 'cycleNext' },
     ],
   },
   {
     title: '终端',
     items: [
       { label: '新建终端', key: 'Ctrl+`', action: 'togglePanel' },
-      { divider: true },
-      { label: '运行任务…', disabled: true },
     ],
   },
   {
@@ -119,6 +109,7 @@ export default function MenuBar({ actions }) {
                       className={`menu-item ${it.disabled ? 'disabled' : ''}`}
                       key={it.label}
                       onClick={() => run(it)}
+                      disabled={Boolean(it.disabled)}
                     >
                       <span className="mi-label">{it.label}</span>
                       {it.key && <span className="mi-key">{it.key}</span>}

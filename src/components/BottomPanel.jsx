@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Close, More } from './icons.jsx';
+import { Close } from './icons.jsx';
 import { ALL_FILES, PROFILE } from '../data/vfs.js';
 import { runTerminalCommand } from '../data/terminal.js';
 
@@ -22,9 +22,11 @@ function TerminalPane({ onOpen }) {
   const [lines, setLines] = useState(() => {
     // 打开终端即自动先执行一条 help，把命令列表展示出来
     const out = runTerminalCommand('help', { open: onOpen, files: ALL_FILES, profile: PROFILE });
-    return [{ text: 'PS C:\\Users\\Kevin\\homepage> help' }, ...out.lines];
+    return [{ text: `${PROFILE.repo}> help` }, ...out.lines];
   });
   const [value, setValue] = useState('');
+  const [history, setHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -34,10 +36,13 @@ function TerminalPane({ onOpen }) {
 
   const submit = (e) => {
     e.preventDefault();
-    const text = value;
+    const text = value.trim();
+    if (!text) return;
+    setHistory((prev) => [...prev, text].slice(-100));
+    setHistoryIndex(-1);
     setValue('');
     setLines((prev) => {
-      const next = [...prev, { text: `PS C:\\Users\\Kevin\\homepage> ${text}` }];
+      const next = [...prev, { text: `${PROFILE.repo}> ${text}` }];
       const out = runTerminalCommand(text, { open: onOpen, files: ALL_FILES, profile: PROFILE });
       if (out.clear) return [];
       return [...next, ...out.lines];
@@ -52,7 +57,7 @@ function TerminalPane({ onOpen }) {
         </div>
       ))}
       <form className="term-line term-inputline" onSubmit={submit}>
-        <span className="term-prompt">PS C:\Users\Kevin\homepage&gt;</span>
+        <span className="term-prompt">{PROFILE.repo}&gt;</span>
         <input
           ref={inputRef}
           className="term-input"
@@ -61,6 +66,16 @@ function TerminalPane({ onOpen }) {
           spellCheck={false}
           autoComplete="off"
           autoFocus
+          aria-label="终端命令"
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+            e.preventDefault();
+            const next = e.key === 'ArrowUp'
+              ? Math.min(history.length - 1, historyIndex + 1)
+              : Math.max(-1, historyIndex - 1);
+            setHistoryIndex(next);
+            setValue(next < 0 ? '' : history[history.length - 1 - next]);
+          }}
         />
       </form>
       <div ref={endRef} />
@@ -93,9 +108,6 @@ export default function BottomPanel({ open, tab, height = 200, setOpen, setTab, 
           </button>
         ))}
         <div className="panel-actions">
-          <button title="面板更多操作（装饰）" className="tb-btn">
-            <More size={13} />
-          </button>
           <button title="关闭面板" className="tb-btn" onClick={() => setOpen(false)}>
             <Close size={13} />
           </button>

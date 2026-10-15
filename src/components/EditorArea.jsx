@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Close, Eye, FileTypeIcon } from './icons.jsx';
 import MarkdownEditor from './MarkdownEditor.jsx';
 import MarkdownView from './MarkdownView.jsx';
@@ -83,16 +83,52 @@ function EmptyPane({ gid, onOpenReadme, onNewDraft, canDragHere }) {
 
 /* ==================== 组内标签条（只放标签） ==================== */
 function GroupTabs({ g, onSelect, onCloseTab, onDragStart, dirtyIds }) {
+  const [menu, setMenu] = useState(null);
+  useEffect(() => {
+    if (!menu) return undefined;
+    const dismiss = () => setMenu(null);
+    const onKey = (event) => { if (event.key === 'Escape') dismiss(); };
+    document.addEventListener('pointerdown', dismiss);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('blur', dismiss);
+    return () => {
+      document.removeEventListener('pointerdown', dismiss);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('blur', dismiss);
+    };
+  }, [menu]);
+
+  const closeMatching = (predicate) => {
+    g.tabs.filter(predicate).forEach((tab) => onCloseTab(g.gid, tab.id));
+    setMenu(null);
+  };
+
   return (
     <div className="tabbar group-tabbar">
-      <div className="tabbar-tabs">
+      <div className="tabbar-tabs" role="tablist" aria-label="打开的编辑器">
         {g.tabs.map(({ id, node }) => (
           <div
             key={id}
             className={`editor-tab ${id === g.active ? 'active' : ''}`}
+            role="tab"
+            tabIndex={id === g.active ? 0 : -1}
+            aria-selected={id === g.active}
             onClick={() => onSelect(g.gid, id)}
-            onAuxClick={(e) => {
-              if (e.button === 1) onCloseTab(g.gid, id);
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onSelect(g.gid, id);
+              }
+            }}
+            onContextMenu={(event) => {
+              event.preventDefault();
+              setMenu({ id, x: event.clientX, y: event.clientY });
+            }}
+            onAuxClick={(event) => {
+              if (event.button === 1) {
+                event.preventDefault();
+                onCloseTab(g.gid, id);
+              }
             }}
             draggable
             onDragStart={(e) => {
@@ -109,13 +145,33 @@ function GroupTabs({ g, onSelect, onCloseTab, onDragStart, dirtyIds }) {
                 e.stopPropagation();
                 onCloseTab(g.gid, id);
               }}
-              title="关闭 (Ctrl+W)"
+              title="关闭编辑器 (Ctrl+W)"
+              aria-label={`关闭 ${node.name}`}
             >
               <Close size={12} />
             </button>
           </div>
         ))}
       </div>
+      {menu && (
+        <div
+          className="editor-context-menu"
+          role="menu"
+          style={{
+            left: Math.max(8, Math.min(menu.x, window.innerWidth - 208)),
+            top: Math.max(8, Math.min(menu.y, window.innerHeight - 160)),
+          }}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          <button role="menuitem" onClick={() => closeMatching((tab) => tab.id === menu.id)}>关闭</button>
+          <button role="menuitem" onClick={() => closeMatching((tab) => tab.id !== menu.id)}>关闭其他</button>
+          <button role="menuitem" onClick={() => {
+            const index = g.tabs.findIndex((tab) => tab.id === menu.id);
+            closeMatching((tab, i) => i > index);
+          }}>关闭右侧</button>
+          <button role="menuitem" onClick={() => closeMatching(() => true)}>关闭所有</button>
+        </div>
+      )}
     </div>
   );
 }
