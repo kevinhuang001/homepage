@@ -57,11 +57,12 @@ export const updateGroup = (n, gid, fn) => {
   return { ...n, a, b };
 };
 
-const activeAfterRemove = (tabs, prevActive, removedId) => {
+/** VS Code 行为：关闭当前标签时，优先选择右侧邻居，否则选择左侧。 */
+const activeAfterRemove = (before, after, prevActive, removedId) => {
   if (prevActive !== removedId) return prevActive;
-  if (tabs.length === 0) return null;
-  const idx = Math.min(tabs.length - 1, 0);
-  return tabs[idx].id;
+  if (after.length === 0) return null;
+  const originalIndex = before.findIndex((tab) => tab.id === removedId);
+  return after[Math.min(originalIndex, after.length - 1)].id;
 };
 
 /** 在 gid 组内打开标签（同组已有则仅激活） */
@@ -73,14 +74,18 @@ export const openTab = (n, gid, tab) =>
   );
 
 export const selectTab = (n, gid, tabId) =>
-  updateGroup(n, gid, (g) => (g.active === tabId ? g : { ...g, active: tabId }));
+  updateGroup(n, gid, (g) => (
+    g.active === tabId || !g.tabs.some((tab) => tab.id === tabId)
+      ? g
+      : { ...g, active: tabId }
+  ));
 
 /** 关闭组内某标签（可越界 id，未找到原样返回）。随后收拢空组。 */
 export const closeTab = (n, gid, tabId) => {
   const next = updateGroup(n, gid, (g) => {
     if (!g.tabs.some((t) => t.id === tabId)) return g;
     const tabs = g.tabs.filter((t) => t.id !== tabId);
-    return { ...g, tabs, active: activeAfterRemove(tabs, g.active, tabId) };
+    return { ...g, tabs, active: activeAfterRemove(g.tabs, tabs, g.active, tabId) };
   });
   return pruneEmpty(next);
 };
@@ -88,12 +93,13 @@ export const closeTab = (n, gid, tabId) => {
 /** 把标签从 fromGid 移到 toGid（同组时视为仅激活） */
 export const moveTabInto = (n, fromGid, toGid, tabId) => {
   if (fromGid === toGid) return selectTab(n, toGid, tabId);
+  if (!findGroup(n, toGid)) return n;
   const src = findGroup(n, fromGid);
   const tab = src?.tabs.find((t) => t.id === tabId);
   if (!tab) return n;
   const removed = updateGroup(n, fromGid, (g) => {
     const tabs = g.tabs.filter((t) => t.id !== tabId);
-    return { ...g, tabs, active: activeAfterRemove(tabs, g.active, tabId) };
+    return { ...g, tabs, active: activeAfterRemove(g.tabs, tabs, g.active, tabId) };
   });
   const opened = openTab(removed, toGid, tab);
   return pruneEmpty(opened);
@@ -171,7 +177,7 @@ export const pruneEmpty = (n, isRoot = true) => {
 export const setRatio = (n, sid, ratio) => {
   if (!n) return n;
   if (isSplit(n)) {
-    if (n.sid === sid) return { ...n, ratio };
+    if (n.sid === sid) return { ...n, ratio: Math.max(0.12, Math.min(0.88, ratio)) };
     const a = setRatio(n.a, sid, ratio);
     const b = setRatio(n.b, sid, ratio);
     if (a === n.a && b === n.b) return n;
