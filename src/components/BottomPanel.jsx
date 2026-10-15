@@ -22,7 +22,7 @@ function TerminalPane({ onOpen }) {
   const [lines, setLines] = useState(() => {
     // 打开终端即自动先执行一条 help，把命令列表展示出来
     const out = runTerminalCommand('help', { open: onOpen, files: ALL_FILES, profile: PROFILE });
-    return [{ text: '\${PROFILE.repo}> help' }, ...out.lines];
+    return [{ text: `${PROFILE.repo}> help` }, ...out.lines];
   });
   const [value, setValue] = useState('');
   const [history, setHistory] = useState([]);
@@ -42,7 +42,7 @@ function TerminalPane({ onOpen }) {
     setHistoryIndex(-1);
     setValue('');
     setLines((prev) => {
-      const next = [...prev, { text: `PS C:\\Users\\Kevin\\homepage> ${text}` }];
+      const next = [...prev, { text: `${PROFILE.repo}> ${text}` }];
       const out = runTerminalCommand(text, { open: onOpen, files: ALL_FILES, profile: PROFILE });
       if (out.clear) return [];
       return [...next, ...out.lines];

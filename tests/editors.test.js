@@ -64,7 +64,8 @@ test('closing a group keeps remaining editor group', () => {
 });
 test('split sash ratio is safely clamped', () => {
   const { root, gid } = seed();
-  const { tree } = splitTabAt(root, gid, 'left', tab('a'), gid);
+  const opened = openTab(root, gid, tab('b'));
+  const { tree } = splitTabAt(opened, gid, 'left', tab('a'), gid);
   assert.equal(setRatio(tree, tree.sid, 2).ratio, 0.88);
   assert.equal(setRatio(tree, tree.sid, -1).ratio, 0.12);
 });

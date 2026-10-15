@@ -71,4 +71,4 @@ Vite 配置使用相对路径 `base: './'`，支持项目子路径部署。如�
 | `tests/` | 核心回归测试 |
 | `docs/` | Actions 生成的可直接发布静态页面 |
 
-MIT-style reuse: 你可以 Fork 这个仓库并替换示例内容。VS Code 是 Microsoft 的产品；本项目只致敬其工作区交互与外观。
+你可以 Fork 项目并替换示例内容；复用时请尊重原仓库的授权说明。VS Code 是 Microsoft 的产品；本项目只致敬其工作区交互与外观。
