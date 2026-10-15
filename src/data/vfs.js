@@ -57,7 +57,7 @@ export function flattenFiles(root) {
 }
 
 export const ALL_FILES = flattenFiles(FILE_TREE);
-export const fileLabel = (node) => node.path.replace(/^//, '');
+export const fileLabel = (node) => node.path.replace(/^\//, '');
 export const fileExt = (node) => node.name.split('.').at(-1).toLowerCase();
 
 /** 既支持完整虚拟路径，也支持相对于工作区根目录的链接。 */
