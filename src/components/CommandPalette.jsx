@@ -11,7 +11,7 @@ const ZapIcon = () => (
 const COMMANDS = [
   { label: '打开 README.md', run: 'openReadme' },
   { label: '打开 Markdown 预览到侧边', run: 'openPreview' },
-  { label: '保存当前文件（演示 · 不写盘）', run: 'save' },
+  { label: '保存当前文件到浏览器', run: 'save' },
   { label: '新建草稿文件', run: 'newDraft' },
   { label: '打开本地文件…', run: 'openLocal' },
   { label: '切换终端面板', run: 'togglePanel' },
@@ -22,7 +22,7 @@ const COMMANDS = [
 ];
 
 /** 仿 VS Code 命令面板：输入文件名或命令 */
-export default function CommandPalette({ onClose, actions }) {
+export default function CommandPalette({ mode = 'commands', onClose, actions }) {
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef(null);
@@ -41,10 +41,10 @@ export default function CommandPalette({ onClose, actions }) {
       label: c.label,
       key: `cmd:${c.label}`,
     }));
-    const all = [...cmds, ...files];
+    const all = mode === 'commands' ? cmds : files;
     if (!q) return all;
     return all.filter((e) => e.label.toLowerCase().includes(q));
-  }, [query]);
+  }, [query, mode]);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -81,13 +81,13 @@ export default function CommandPalette({ onClose, actions }) {
     <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div className="palette">
         <div className="palette-input-row">
-          <span className="palette-chevron">&gt;</span>
+          {mode === 'commands' && <span className="palette-chevron">&gt;</span>}
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="输入文件名或命令名称，例如：关于我 / 技能"
+            placeholder={mode === 'commands' ? '输入要执行的命令' : '按文件名快速打开（Ctrl+P）'}
             spellCheck={false}
           />
         </div>
@@ -114,7 +114,7 @@ export default function CommandPalette({ onClose, actions }) {
         </div>
         <div className="palette-footer">
           <span>↑↓ 选择 · Enter 打开</span>
-          <span className="palette-hint">个人主页的命令面板（仿）</span>
+          <span className="palette-hint">{mode === 'commands' ? '命令面板' : '快速打开文件'} · Esc 退出</span>
         </div>
       </div>
     </div>
